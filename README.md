@@ -1,14 +1,9 @@
+
 # 📘 Booky – Letterboxd for Books
 
 **Booky** is a full-stack web application inspired by Letterboxd, tailored for book lovers. It allows users to track their reading journey, rate and review books, build personalized book lists, follow other readers, and explore trending books — all in a modern, responsive interface with dark mode support.
 
 ---
-
-## 🌐 Live Demo
-
-👉 Click here to view the deployed app - https://booksy-k-ayeshas-projects.vercel.app/
----
-
 ## ✨ Features
 
 - 📚 Track books as Read, Currently Reading, or Want to Read
