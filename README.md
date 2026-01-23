@@ -1,14 +1,25 @@
+<<<<<<< HEAD
+=======
+
+>>>>>>> 8932faba62dd692679fde011735a23a43a9b913d
 # 📘 Booky – Letterboxd for Books
 
 **Booky** is a full-stack web application inspired by Letterboxd, tailored for book lovers. It allows users to track their reading journey, rate and review books, build personalized book lists, follow other readers, and explore trending books — all in a modern, responsive interface with dark mode support.
 
 ---
+<<<<<<< HEAD
 
+=======
+>>>>>>> 8932faba62dd692679fde011735a23a43a9b913d
 ## ✨ Features
 
 - 📚 Track books as Read, Currently Reading, or Want to Read
 - ⭐ Rate and review books
+<<<<<<< HEAD
 - 💬 Like and comment on others' reviews
+=======
+- 💬 Like and comment on others’ reviews
+>>>>>>> 8932faba62dd692679fde011735a23a43a9b913d
 - 📂 Create public or private book lists
 - 👥 Follow users and view their reading activity
 - 🔍 Search for books and users
@@ -23,6 +34,7 @@
 - Tailwind CSS
 - React Router
 - React Query
+<<<<<<< HEAD
 - Vite
 
 ### Backend
@@ -206,7 +218,14 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## 📄 License
 
 This project is open source and available under the MIT License.
+=======
+- Local Storage (for data persistence)
+>>>>>>> 8932faba62dd692679fde011735a23a43a9b913d
 
 ---
 
 ## 🚀 Happy Building & Reading!
+<<<<<<< HEAD
+=======
+
+>>>>>>> 8932faba62dd692679fde011735a23a43a9b913d
