@@ -1,206 +1,141 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { api } from '@/services/api';
-import { Button, Input, Label, Textarea, Card, CardContent, CardDescription, CardHeader, CardTitle, Avatar, AvatarFallback } from '@/components/InlineComponents';
-import { BookOpen, Mail, User, Calendar, Edit, Save, X } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  Button,
+  Input,
+  Label,
+  Textarea,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Avatar,
+  AvatarFallback,
+} from "@/components/InlineComponents";
+import { BookOpen, Mail, User, Calendar, Edit, Save, X } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 const Profile = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
+
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({
-    username: '',
-    bio: ''
+    username: "",
+    bio: "",
   });
 
+  // Populate edit form once user is available
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/auth');
-      return;
-    }
-    
     if (user) {
-      fetchProfile();
-    }
-  }, [user, authLoading, navigate]);
-
-  const fetchProfile = async () => {
-    if (!user) return;
-    
-    try {
-      setLoading(true);
-      const userId = user._id || user.id;
-      const result = await api.users.getProfile(userId);
-      
-      if (result.data?.data) {
-        const profileData = result.data.data;
-        setProfile(profileData);
-        setEditForm({
-          username: profileData.username || '',
-          bio: profileData.bio || ''
-        });
-      } else {
-        // Use default profile from user object
-        setProfile({
-          username: user.username || user.email?.split('@')[0] || 'User',
-          bio: user.bio || 'Book lover 📚',
-          email: user.email,
-          created_at: user.created_at
-        });
-        setEditForm({
-          username: user.username || user.email?.split('@')[0] || 'User',
-          bio: user.bio || 'Book lover 📚'
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      // Set default profile
-      setProfile({
-        username: user?.username || user?.email?.split('@')[0] || 'User',
-        bio: user?.bio || 'Book lover 📚',
-        email: user?.email,
-        created_at: user?.created_at
-      });
       setEditForm({
-        username: user?.username || user?.email?.split('@')[0] || 'User',
-        bio: user?.bio || 'Book lover 📚'
+        username: user.username || "",
+        bio: user.bio || "",
       });
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [user]);
+
+  // Redirect only AFTER loading finishes
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
+    }
+  }, [loading, user, navigate]);
 
   const handleSave = async () => {
-    if (!user) return;
-
     try {
-      const userId = user._id || user.id;
-      const result = await api.users.updateProfile(userId, {
-        username: editForm.username,
-        bio: editForm.bio
-      });
+      // Update via backend
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api"}/users/${user._id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("booky_token")}`,
+          },
+          body: JSON.stringify(editForm),
+        }
+      );
 
-      if (result.error) throw result.error;
+      if (!res.ok) throw new Error("Update failed");
 
-      setProfile({
-        ...profile,
-        username: editForm.username,
-        bio: editForm.bio
-      });
-      
-      setEditing(false);
       toast({
-        title: "Profile updated!",
-        description: "Your profile has been updated successfully."
+        title: "Profile updated",
+        description: "Your profile was updated successfully",
       });
-    } catch (error) {
-      console.error('Error updating profile:', error);
+
+      setEditing(false);
+    } catch (err) {
       toast({
         title: "Error",
-        description: "Failed to update profile. Please try again.",
-        variant: "destructive"
+        description: "Failed to update profile",
+        variant: "destructive",
       });
     }
   };
 
-  const handleCancel = () => {
-    setEditForm({
-      username: profile?.username || '',
-      bio: profile?.bio || ''
-    });
-    setEditing(false);
-  };
-
-  const handleSignOut = async () => {
-    try {
-      // Sign out and navigate
-      navigate('/');
-    } catch (error) {
-      console.error('Sign out error:', error);
-    }
-  };
-
-  if (authLoading || loading) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <BookOpen className="h-12 w-12 text-amber-600 animate-pulse mx-auto mb-4" />
-          <p className="text-gray-600">Loading profile...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <BookOpen className="h-12 w-12 text-amber-600 animate-pulse" />
       </div>
     );
   }
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto max-w-4xl px-4">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">My Profile</h1>
-          <p className="text-xl text-gray-600">Manage your account and preferences</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            My Profile
+          </h1>
+          <p className="text-gray-600">
+            Manage your account information
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Profile Info Card */}
+          {/* Profile Card */}
           <div className="md:col-span-2">
             <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Profile Information</CardTitle>
-                    <CardDescription>Your personal details and bio</CardDescription>
-                  </div>
-                  {!editing ? (
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setEditing(true)}
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit
-                    </Button>
-                  ) : (
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={handleCancel}
-                      >
-                        <X className="h-4 w-4 mr-2" />
-                        Cancel
-                      </Button>
-                      <Button 
-                        size="sm"
-                        onClick={handleSave}
-                        className="bg-amber-600 hover:bg-amber-700"
-                      >
-                        <Save className="h-4 w-4 mr-2" />
-                        Save
-                      </Button>
-                    </div>
-                  )}
+              <CardHeader className="flex flex-row justify-between items-center">
+                <div>
+                  <CardTitle>Profile Information</CardTitle>
+                  <CardDescription>Your personal details</CardDescription>
                 </div>
+
+                {!editing ? (
+                  <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+                    <Edit className="h-4 w-4 mr-2" /> Edit
+                  </Button>
+                ) : (
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setEditing(false)}>
+                      <X className="h-4 w-4 mr-2" /> Cancel
+                    </Button>
+                    <Button size="sm" onClick={handleSave} className="bg-amber-600 hover:bg-amber-700">
+                      <Save className="h-4 w-4 mr-2" /> Save
+                    </Button>
+                  </div>
+                )}
               </CardHeader>
+
               <CardContent className="space-y-6">
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center gap-4">
                   <Avatar className="h-20 w-20">
-                    <AvatarImage src={profile?.profile_picture} />
-                    <AvatarFallback className="text-lg">
-                      {profile?.username?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase()}
+                    <AvatarFallback className="text-xl">
+                      {user.username?.charAt(0)?.toUpperCase() ||
+                        user.email?.charAt(0)?.toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
+
                   <div>
-                    <h3 className="text-lg font-semibold">
-                      {profile?.username || user.email?.split('@')[0]}
-                    </h3>
+                    <h3 className="text-lg font-semibold">{user.username}</h3>
                     <p className="text-gray-600 flex items-center">
                       <Mail className="h-4 w-4 mr-1" />
                       {user.email}
@@ -209,72 +144,73 @@ const Profile = () => {
                 </div>
 
                 {editing ? (
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="username">Username</Label>
-                      <Input
-                        id="username"
-                        value={editForm.username}
-                        onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
-                        placeholder="Enter your username"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="bio">Bio</Label>
-                      <Textarea
-                        id="bio"
-                        value={editForm.bio}
-                        onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
-                        placeholder="Tell us about yourself..."
-                        rows={4}
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
+                  <>
                     <div>
                       <Label>Username</Label>
-                      <p className="text-gray-900 mt-1">{profile?.username || 'Not set'}</p>
+                      <Input
+                        value={editForm.username}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, username: e.target.value })
+                        }
+                      />
                     </div>
+
                     <div>
                       <Label>Bio</Label>
-                      <p className="text-gray-900 mt-1">{profile?.bio || 'No bio added yet'}</p>
+                      <Textarea
+                        rows={4}
+                        value={editForm.bio}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, bio: e.target.value })
+                        }
+                      />
                     </div>
-                  </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <Label>Username</Label>
+                      <p className="mt-1">{user.username || "—"}</p>
+                    </div>
+
+                    <div>
+                      <Label>Bio</Label>
+                      <p className="mt-1">{user.bio || "No bio added yet"}</p>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>
           </div>
 
-          {/* Stats Card */}
+          {/* Stats */}
           <div>
             <Card>
               <CardHeader>
                 <CardTitle>Account Stats</CardTitle>
-                <CardDescription>Your reading journey</CardDescription>
+                <CardDescription>Your journey</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <User className="h-5 w-5 text-amber-600" />
+                <div className="flex items-center gap-3">
+                  <Calendar className="h-5 w-5 text-amber-600" />
                   <div>
                     <p className="text-sm text-gray-600">Member since</p>
                     <p className="font-semibold">
-                      {profile?.created_at ? 
-                        new Date(profile.created_at).toLocaleDateString() : 
-                        'Recently'
-                      }
+                      {new Date(user.created_at).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-3">
+
+                <div className="flex items-center gap-3">
                   <BookOpen className="h-5 w-5 text-amber-600" />
                   <div>
                     <p className="text-sm text-gray-600">Books read</p>
                     <p className="font-semibold">0</p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-3">
-                  <Calendar className="h-5 w-5 text-amber-600" />
+
+                <div className="flex items-center gap-3">
+                  <User className="h-5 w-5 text-amber-600" />
                   <div>
                     <p className="text-sm text-gray-600">Reading streak</p>
                     <p className="font-semibold">0 days</p>

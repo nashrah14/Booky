@@ -75,7 +75,7 @@ const Footer = () => {
 
         <div className="pt-8 border-t border-gray-300">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-            <p className="text-sm text-gray-600">© {currentYear} Booky — Made with ❤️ for book lovers</p>
+            <p className="text-sm text-gray-600">© {currentYear} Booky - Made with ❤️ for book lovers</p>
             <div className="flex items-center space-x-4">
               {socialLinks.map((social) => {
                 const Icon = social.icon;

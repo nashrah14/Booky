@@ -1,7 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/services/api';
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label, Textarea, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, Switch } from '@/components/InlineComponents';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Input,
+  Label,
+  Textarea,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  Switch
+} from '@/components/InlineComponents';
 import { Plus, List, Users, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -11,6 +28,7 @@ const Lists = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
   const [lists, setLists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -29,15 +47,20 @@ const Lists = () => {
   }, [user, navigate]);
 
   const fetchLists = async () => {
-    if (!user?.id) return;
-
     try {
       setLoading(true);
-      const userId = user._id || user.id;
+
+      // ✅ FIX: support MongoDB _id
+      const userId = user?._id || user?.id;
+      if (!userId) {
+        setLists(DUMMY_LISTS);
+        setLoading(false);
+        return;
+      }
+
       const result = await api.lists.getByUser(userId);
-      
-      if (result.data?.data && result.data.data.length > 0) {
-        // Map MongoDB data and get book counts
+
+      if (result?.data?.data && Array.isArray(result.data.data)) {
         const listsWithCount = result.data.data.map(list => ({
           ...list,
           id: list._id || list.id,
@@ -45,12 +68,10 @@ const Lists = () => {
         }));
         setLists(listsWithCount);
       } else {
-        // Use dummy lists when no lists found
         setLists(DUMMY_LISTS);
       }
     } catch (error) {
       console.error('Error fetching lists:', error);
-      // Use dummy lists as fallback
       setLists(DUMMY_LISTS);
     } finally {
       setLoading(false);
@@ -58,7 +79,7 @@ const Lists = () => {
   };
 
   const createList = async () => {
-    if (!user?.id || !newList.title.trim()) return;
+    if (!newList.title.trim()) return;
 
     try {
       const result = await api.lists.create({
@@ -68,30 +89,27 @@ const Lists = () => {
       });
 
       if (result.error) {
-        throw new Error(result.error.message || 'Failed to create list');
+        throw new Error(result.error.message);
       }
 
       toast({
-        title: "List created!",
-        description: "Your new book list has been created successfully."
+        title: 'List created!',
+        description: 'Your new book list has been created successfully.',
       });
 
       setNewList({ title: '', description: '', is_public: true });
       setIsCreateDialogOpen(false);
       fetchLists();
     } catch (error) {
-      console.error('Error creating list:', error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to create list. Please try again.",
-        variant: "destructive"
+        title: 'Error',
+        description: error.message || 'Failed to create list.',
+        variant: 'destructive',
       });
     }
   };
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   if (loading) {
     return (
@@ -110,8 +128,11 @@ const Lists = () => {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-4xl font-bold text-gray-900 mb-4">My Lists</h1>
-            <p className="text-xl text-gray-600">Organize your books into custom lists</p>
+            <p className="text-xl text-gray-600">
+              Organize your books into custom lists
+            </p>
           </div>
+
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button className="bg-amber-600 hover:bg-amber-700">
@@ -119,6 +140,7 @@ const Lists = () => {
                 Create List
               </Button>
             </DialogTrigger>
+
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Create New List</DialogTitle>
@@ -126,36 +148,44 @@ const Lists = () => {
                   Create a custom list to organize your books
                 </DialogDescription>
               </DialogHeader>
+
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">List Title</Label>
+                <div>
+                  <Label>List Title</Label>
                   <Input
-                    id="title"
-                    placeholder="My Favorite Sci-Fi Books"
                     value={newList.title}
-                    onChange={(e) => setNewList({ ...newList, title: e.target.value })}
+                    onChange={(e) =>
+                      setNewList({ ...newList, title: e.target.value })
+                    }
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description (Optional)</Label>
+
+                <div>
+                  <Label>Description</Label>
                   <Textarea
-                    id="description"
-                    placeholder="A collection of my favorite science fiction novels..."
                     value={newList.description}
-                    onChange={(e) => setNewList({ ...newList, description: e.target.value })}
+                    onChange={(e) =>
+                      setNewList({ ...newList, description: e.target.value })
+                    }
                   />
                 </div>
+
                 <div className="flex items-center space-x-2">
                   <Switch
-                    id="public"
                     checked={newList.is_public}
-                    onCheckedChange={(checked) => setNewList({ ...newList, is_public: checked })}
+                    onCheckedChange={(checked) =>
+                      setNewList({ ...newList, is_public: checked })
+                    }
                   />
-                  <Label htmlFor="public">Make this list public</Label>
+                  <Label>Make list public</Label>
                 </div>
-                <div className="flex space-x-2">
-                  <Button onClick={createList} className="bg-amber-600 hover:bg-amber-700 flex-1">
-                    Create List
+
+                <div className="flex gap-2">
+                  <Button
+                    onClick={createList}
+                    className="bg-amber-600 hover:bg-amber-700 flex-1"
+                  >
+                    Create
                   </Button>
                   <Button
                     variant="outline"
@@ -173,23 +203,15 @@ const Lists = () => {
         {lists.length === 0 ? (
           <div className="text-center py-16">
             <List className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No lists yet</h3>
-            <p className="text-gray-600 mb-6">Create your first book list to get started</p>
-            <Button
-              onClick={() => setIsCreateDialogOpen(true)}
-              className="bg-amber-600 hover:bg-amber-700"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Create Your First List
-            </Button>
+            <h3 className="text-xl font-semibold">No lists yet</h3>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {lists.map((list) => (
-              <Card key={list.id || list._id} className="hover:shadow-lg transition-shadow cursor-pointer">
+              <Card key={list.id} className="hover:shadow-lg">
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg font-semibold">{list.name || list.title}</CardTitle>
+                  <div className="flex justify-between">
+                    <CardTitle>{list.name || list.title}</CardTitle>
                     {list.is_public ? (
                       <Users className="h-4 w-4 text-green-600" />
                     ) : (
@@ -197,26 +219,13 @@ const Lists = () => {
                     )}
                   </div>
                   <CardDescription>
-                    {list.description || 'No description provided'}
+                    {list.description || 'No description'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center justify-between text-sm text-gray-600">
-                    <span>{list.book_count || 0} book{(list.book_count || 0) !== 1 ? 's' : ''}</span>
-                    <span>
-                      {list.is_public ? 'Public' : 'Private'}
-                    </span>
-                  </div>
-                  <div className="mt-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                      onClick={() => navigate(`/lists/${list.id || list._id}`)}
-                    >
-                      View List
-                    </Button>
-                  </div>
+                  <p className="text-sm text-gray-600">
+                    {list.book_count} book(s)
+                  </p>
                 </CardContent>
               </Card>
             ))}

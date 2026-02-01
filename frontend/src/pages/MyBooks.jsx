@@ -3,90 +3,73 @@ import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/services/api';
 import { BookCard } from '@/components/BookCard';
 import { Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/InlineComponents';
-import { BookOpen, BookMarked, Clock, CheckCircle } from 'lucide-react';
+import { BookOpen, BookMarked, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { DUMMY_USER_BOOKS } from '@/data/dummyData';
 
 const MyBooks = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+
   const [userBooks, setUserBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('currently_reading');
 
+  /* ------------------ Redirect if not logged in ------------------ */
   useEffect(() => {
-    if (!user) {
+    if (!authLoading && !user) {
       navigate('/auth');
-      return;
     }
-    fetchUserBooks();
-  }, [user, navigate]);
+  }, [authLoading, user, navigate]);
 
-  const fetchUserBooks = async () => {
-    if (!user?.id) return;
+  /* ------------------ Fetch books when user is ready ------------------ */
+  useEffect(() => {
+    if (!user?.id && !user?._id) return;
 
-    try {
-      setLoading(true);
-      // Handle both MongoDB _id and regular id
-      const userId = user._id || user.id;
-      const result = await api.users.getBooks(userId);
-      
-      if (result.data?.data && result.data.data.length > 0) {
-        // Map MongoDB data to expected format
-        const userBooksWithDetails = result.data.data.map(userBook => ({
-          id: userBook._id || userBook.id,
-          status: userBook.status,
-          book_id: userBook.book_id?._id || userBook.book_id?.id || userBook.book_id,
-          book: {
-            id: userBook.book_id?._id || userBook.book_id?.id || userBook.book_id,
-            title: userBook.book_id?.title || 'Unknown',
-            author: userBook.book_id?.author || 'Unknown',
-            cover_url: userBook.book_id?.cover_url || '',
-            average_rating: userBook.book_id?.average_rating || 0
-          }
-        }));
-        
-        setUserBooks(userBooksWithDetails);
-      } else {
-        // Use dummy books when no user books found
+    const fetchUserBooks = async () => {
+      try {
+        setLoading(true);
+        const userId = user._id || user.id;
+        const result = await api.users.getBooks(userId);
+
+        if (result.data?.data?.length > 0) {
+          const mappedBooks = result.data.data.map(userBook => ({
+            id: userBook._id || userBook.id,
+            status: userBook.status,
+            book_id: userBook.book_id?._id || userBook.book_id?.id || userBook.book_id,
+            book: {
+              id: userBook.book_id?._id || userBook.book_id?.id || userBook.book_id,
+              title: userBook.book_id?.title || 'Unknown',
+              author: userBook.book_id?.author || 'Unknown',
+              cover_url: userBook.book_id?.cover_url || '',
+              average_rating: userBook.book_id?.average_rating || 0
+            }
+          }));
+
+          setUserBooks(mappedBooks);
+        } else {
+          setUserBooks(DUMMY_USER_BOOKS);
+        }
+      } catch (error) {
+        console.error('Error fetching user books:', error);
         setUserBooks(DUMMY_USER_BOOKS);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching user books:', error);
-      // Use dummy books as fallback
-      setUserBooks(DUMMY_USER_BOOKS);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  const getBooksByStatus = (status) => {
-    return userBooks.filter(userBook => userBook.status === status);
-  };
+    fetchUserBooks();
+  }, [user]);
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'currently_reading':
-      case 'reading':
-        return <BookOpen className="h-5 w-5" />;
-      case 'want_to_read':
-        return <BookMarked className="h-5 w-5" />;
-      case 'read':
-        return <CheckCircle className="h-5 w-5" />;
-      default:
-        return <BookOpen className="h-5 w-5" />;
-    }
-  };
+  /* ------------------ Helpers ------------------ */
+  const getBooksByStatus = status =>
+    userBooks.filter(book => book.status === status);
 
-  const getStatusCount = (status) => {
-    return getBooksByStatus(status).length;
-  };
+  const getStatusCount = status =>
+    getBooksByStatus(status).length;
 
-  if (!user) {
-    return null;
-  }
-
-  if (loading) {
+  /* ------------------ Loader ------------------ */
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -97,9 +80,13 @@ const MyBooks = () => {
     );
   }
 
+  if (!user) return null;
+
+  /* ------------------ UI ------------------ */
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto max-w-6xl px-4">
+
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">My Books</h1>
           <p className="text-xl text-gray-600">Track your reading journey</p>
@@ -107,150 +94,57 @@ const MyBooks = () => {
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <BookOpen className="h-6 w-6 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{getStatusCount('currently_reading') + getStatusCount('reading')}</p>
-                <p className="text-gray-600">Currently Reading</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
-                <BookMarked className="h-6 w-6 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{getStatusCount('want_to_read')}</p>
-                <p className="text-gray-600">Want to Read</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{getStatusCount('read')}</p>
-                <p className="text-gray-600">Books Read</p>
-              </div>
-            </div>
-          </div>
+          <StatCard icon={<BookOpen />} count={getStatusCount('currently_reading') + getStatusCount('reading')} label="Currently Reading" />
+          <StatCard icon={<BookMarked />} count={getStatusCount('want_to_read')} label="Want to Read" />
+          <StatCard icon={<CheckCircle />} count={getStatusCount('read')} label="Books Read" />
         </div>
 
-        {/* Books Tabs */}
+        {/* Tabs */}
         <div className="bg-white rounded-lg shadow-sm p-6">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="currently_reading" className="flex items-center space-x-2">
-                <BookOpen className="h-4 w-4" />
-                <span>Reading ({getStatusCount('currently_reading') + getStatusCount('reading')})</span>
-              </TabsTrigger>
-              <TabsTrigger value="want_to_read" className="flex items-center space-x-2">
-                <BookMarked className="h-4 w-4" />
-                <span>Want to Read ({getStatusCount('want_to_read')})</span>
-              </TabsTrigger>
-              <TabsTrigger value="read" className="flex items-center space-x-2">
-                <CheckCircle className="h-4 w-4" />
-                <span>Read ({getStatusCount('read')})</span>
-              </TabsTrigger>
+              <TabsTrigger value="currently_reading">Reading</TabsTrigger>
+              <TabsTrigger value="want_to_read">Want to Read</TabsTrigger>
+              <TabsTrigger value="read">Read</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="currently_reading" className="mt-6">
-              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                {[...getBooksByStatus('currently_reading'), ...getBooksByStatus('reading')].map((userBook) => (
-                  <BookCard
-                    key={userBook.id}
-                    book={{
-                      id: userBook.book?.id || userBook.book_id || 'unknown',
-                      title: userBook.book?.title || 'Unknown Title',
-                      author: userBook.book?.author || 'Unknown Author',
-                      rating: userBook.book?.average_rating || 0,
-                      reviews: 0,
-                      cover: userBook.book?.cover_url || 'https://via.placeholder.com/300x400?text=No+Cover',
-                      status: 'reading'
-                    }}
-                  />
-                ))}
-              </div>
-              {getBooksByStatus('currently_reading').length === 0 && getBooksByStatus('reading').length === 0 && (
-                <div className="text-center py-12">
-                  <BookOpen className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No books currently reading</h3>
-                  <p className="text-gray-600 mb-4">Start reading a book to see it here</p>
-                  <Button onClick={() => navigate('/discover')} className="bg-amber-600 hover:bg-amber-700">
-                    Discover Books
-                  </Button>
+            {['currently_reading', 'want_to_read', 'read'].map(status => (
+              <TabsContent key={status} value={status} className="mt-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {getBooksByStatus(status).map(userBook => (
+                    <BookCard
+                      key={userBook.id}
+                      book={{
+                        id: userBook.book?.id,
+                        title: userBook.book?.title,
+                        author: userBook.book?.author,
+                        rating: userBook.book?.average_rating,
+                        cover: userBook.book?.cover_url || 'https://via.placeholder.com/300x400?text=No+Cover',
+                        status
+                      }}
+                    />
+                  ))}
                 </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="want_to_read" className="mt-6">
-              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                {getBooksByStatus('want_to_read').map((userBook) => (
-                  <BookCard
-                    key={userBook.id}
-                    book={{
-                      id: userBook.book?.id || userBook.book_id || 'unknown',
-                      title: userBook.book?.title || 'Unknown Title',
-                      author: userBook.book?.author || 'Unknown Author',
-                      rating: userBook.book?.average_rating || 0,
-                      reviews: 0,
-                      cover: userBook.book?.cover_url || 'https://via.placeholder.com/300x400?text=No+Cover',
-                      status: 'want_to_read'
-                    }}
-                  />
-                ))}
-              </div>
-              {getBooksByStatus('want_to_read').length === 0 && (
-                <div className="text-center py-12">
-                  <BookMarked className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No books in your reading list</h3>
-                  <p className="text-gray-600 mb-4">Add books you want to read</p>
-                  <Button onClick={() => navigate('/discover')} className="bg-amber-600 hover:bg-amber-700">
-                    Discover Books
-                  </Button>
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="read" className="mt-6">
-              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                {getBooksByStatus('read').map((userBook) => (
-                  <BookCard
-                    key={userBook.id}
-                    book={{
-                      id: userBook.book?.id || userBook.book_id || 'unknown',
-                      title: userBook.book?.title || 'Unknown Title',
-                      author: userBook.book?.author || 'Unknown Author',
-                      rating: userBook.book?.average_rating || 0,
-                      reviews: 0,
-                      cover: userBook.book?.cover_url || 'https://via.placeholder.com/300x400?text=No+Cover',
-                      status: 'read'
-                    }}
-                  />
-                ))}
-              </div>
-              {getBooksByStatus('read').length === 0 && (
-                <div className="text-center py-12">
-                  <CheckCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No books finished yet</h3>
-                  <p className="text-gray-600 mb-4">Mark books as read when you finish them</p>
-                  <Button onClick={() => navigate('/discover')} className="bg-amber-600 hover:bg-amber-700">
-                    Discover Books
-                  </Button>
-                </div>
-              )}
-            </TabsContent>
+              </TabsContent>
+            ))}
           </Tabs>
         </div>
       </div>
     </div>
   );
 };
+
+/* ------------------ Small stat component ------------------ */
+const StatCard = ({ icon, count, label }) => (
+  <div className="bg-white rounded-lg shadow-sm p-6 flex items-center space-x-4">
+    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+      {icon}
+    </div>
+    <div>
+      <p className="text-2xl font-bold">{count}</p>
+      <p className="text-gray-600">{label}</p>
+    </div>
+  </div>
+);
 
 export default MyBooks;
