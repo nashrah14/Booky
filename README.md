@@ -1,6 +1,6 @@
-# 📘 Booksy – Letterboxd for Books
+# 📘 Booksy - Letterboxd for Books
 
-**Booksy** is a full-stack web application inspired by Letterboxd, tailored for book lovers. It allows users to track their reading journey, rate and review books, build personalized book lists, follow other readers, and explore trending books — all in a modern, responsive interface with dark mode support.
+**Booksy** is a full-stack web application inspired by Letterboxd, tailored for book lovers. It allows users to track their reading journey, rate and review books, build personalized book lists, follow other readers, and explore trending books - all in a modern, responsive interface.
 
 ---
 
@@ -12,7 +12,6 @@
 - 📂 Create public or private book lists
 - 👥 Follow users and view their reading activity
 - 🔍 Search for books and users
-- 🌙 Dark mode toggle
 
 ---
 
@@ -277,5 +276,3 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 This project is open source and available under the MIT License.
 
 ---
-
-## 🚀 Happy Building & Reading!
