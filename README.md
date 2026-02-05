@@ -1,4 +1,4 @@
-# 📘 Booksy - Letterboxd for Books
+# 📘 Booky - Letterboxd for Books
 
 **Booksy** is a full-stack web application inspired by Letterboxd, tailored for book lovers. It allows users to track their reading journey, rate and review books, build personalized book lists, follow other readers, and explore trending books - all in a modern, responsive interface.
 
